@@ -19,7 +19,6 @@
             android:id="@+id/frtv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:textColor="#789654"
-            app:textSize="20sp" />
+            app:textSize="60sp" />
     </ScrollView>
 </RelativeLayout>

@@ -21,6 +21,9 @@ import java.util.List;
  */
 
 public class LaTeXtView extends TextView {
+
+    private int laTexSize=0;
+
     public LaTeXtView(Context context) {
         super(context);
     }
@@ -86,7 +89,7 @@ public class LaTeXtView extends TextView {
     private Bitmap getBitmap(TeXFormula formula) {
         TeXIcon icon = formula.new TeXIconBuilder()
                 .setStyle(TeXConstants.STYLE_DISPLAY)
-                .setSize(getPaint().getTextSize() / getPaint().density)
+                .setSize(laTexSize )
                 .setWidth(TeXConstants.UNIT_SP, getPaint().getTextSize() / getPaint().density, TeXConstants.ALIGN_LEFT)
                 .setIsMaxWidth(true)
                 .setInterLineSpacing(TeXConstants.UNIT_SP,
@@ -101,5 +104,9 @@ public class LaTeXtView extends TextView {
         g2.drawColor(Color.TRANSPARENT);
         icon.paintIcon(g2, 0, 0);
         return image;
+    }
+
+    public void setLaTexSize(int laTexSize) {
+        this.laTexSize = laTexSize;
     }
 }

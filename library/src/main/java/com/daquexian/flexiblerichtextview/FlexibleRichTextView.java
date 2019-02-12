@@ -135,8 +135,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private void initAttr(AttributeSet attributeSet) {
         TypedArray a = mContext.obtainStyledAttributes(attributeSet, R.styleable.FlexibleRichTextView);
-        textColor = a.getColor(R.styleable.FlexibleRichTextView_textColor, 0X2ddd2d2d);
-        textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, 20);
+        textColor = a.getColor(R.styleable.FlexibleRichTextView_textColor, 0XFF000000);
+        textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, SizeUtil.sp2px(20));
         a.recycle();
     }
 
@@ -170,9 +170,10 @@ public class FlexibleRichTextView extends LinearLayout {
             if (o instanceof TextWithFormula) {
                 final TextWithFormula textWithFormula = (TextWithFormula) o;
                 final LaTeXtView textView = new LaTeXtView(mContext);
+                textView.setLaTexSize(SizeUtil.px2sp(textSize));
                 textView.setTextWithFormula(textWithFormula);
                 textView.setMovementMethod(LinkMovementMethod.getInstance());
-                textView.setTextSize(textSize);
+                textView.setTextSize(SizeUtil.px2sp(textSize));
                 textView.setTextColor(textColor);
                 myAddView(textView);
             } else if (o instanceof CodeView) {
