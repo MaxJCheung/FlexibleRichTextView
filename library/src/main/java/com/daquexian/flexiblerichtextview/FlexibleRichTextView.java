@@ -175,6 +175,14 @@ public class FlexibleRichTextView extends LinearLayout {
                 textView.setMovementMethod(LinkMovementMethod.getInstance());
                 textView.setTextSize(SizeUtil.px2sp(textSize));
                 textView.setTextColor(textColor);
+                textView.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (null != mOnViewClickListener) {
+                            mOnViewClickListener.onViewClick();
+                        }
+                    }
+                });
                 myAddView(textView);
             } else if (o instanceof CodeView) {
                 myAddView((CodeView) o);
@@ -839,6 +847,8 @@ public class FlexibleRichTextView extends LinearLayout {
     }
 
     public interface OnViewClickListener {
+        void onViewClick();
+
         void onImgClick(ImageView imageView);
 
         void onAttClick(Attachment attachment);
