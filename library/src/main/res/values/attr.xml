@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="QuoteView">
-        <attr name="buttonId" format="reference"/>
+        <attr name="buttonId" format="reference" />
     </declare-styleable>
+
+    <declare-styleable name="FlexibleRichTextView">
+        <attr name="textColor" format="color" />
+        <attr name="textSize" format="dimension" />
+    </declare-styleable>
+
 </resources>

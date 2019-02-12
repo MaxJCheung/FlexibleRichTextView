@@ -3,6 +3,7 @@ package com.daquexian.flexiblerichtextview;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -47,7 +48,37 @@ import java.util.regex.Pattern;
 
 import io.github.kbiakov.codeview.CodeView;
 
-import static com.daquexian.flexiblerichtextview.Tokenizer.*;
+import static com.daquexian.flexiblerichtextview.Tokenizer.ATTACHMENT;
+import static com.daquexian.flexiblerichtextview.Tokenizer.BOLD_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.BOLD_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CENTER_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CENTER_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CODE_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CODE_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.COLOR_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.COLOR_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CURTAIN_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.CURTAIN_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.DELETE_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.DELETE_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.FORMULA;
+import static com.daquexian.flexiblerichtextview.Tokenizer.ICON;
+import static com.daquexian.flexiblerichtextview.Tokenizer.IMAGE;
+import static com.daquexian.flexiblerichtextview.Tokenizer.ITALIC_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.ITALIC_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.PLAIN;
+import static com.daquexian.flexiblerichtextview.Tokenizer.QUOTE_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.QUOTE_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.TABLE;
+import static com.daquexian.flexiblerichtextview.Tokenizer.TITLE_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.TITLE_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.TOKEN;
+import static com.daquexian.flexiblerichtextview.Tokenizer.UNDERLINE_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.UNDERLINE_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.URL_END;
+import static com.daquexian.flexiblerichtextview.Tokenizer.URL_START;
+import static com.daquexian.flexiblerichtextview.Tokenizer.tokenizer;
 
 /**
  * Created by jianhao on 16-8-26.
@@ -71,9 +102,12 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private int mQuoteViewId = R.layout.default_quote_view;
 
+    private int textColor;
+
+    private float textSize;
+
     public FlexibleRichTextView(Context context) {
         this(context, null, true);
-
     }
 
     @SuppressWarnings("unused")
@@ -90,11 +124,20 @@ public class FlexibleRichTextView extends LinearLayout {
     public FlexibleRichTextView(Context context, AttributeSet attributeSet) {
         super(context, attributeSet);
         init(context);
+        initAttr(attributeSet);
     }
 
     public FlexibleRichTextView(Context context, AttributeSet attributeSet, int defStyleAttr) {
         super(context, attributeSet, defStyleAttr);
         init(context);
+        initAttr(attributeSet);
+    }
+
+    private void initAttr(AttributeSet attributeSet) {
+        TypedArray a = mContext.obtainStyledAttributes(attributeSet, R.styleable.FlexibleRichTextView);
+        textColor = a.getColor(R.styleable.FlexibleRichTextView_textColor, 0X2ddd2d2d);
+        textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, 20);
+        a.recycle();
     }
 
     public void setToken(List<TOKEN> tokens, List<Attachment> attachmentList) {
@@ -126,12 +169,11 @@ public class FlexibleRichTextView extends LinearLayout {
         for (final Object o : result) {
             if (o instanceof TextWithFormula) {
                 final TextWithFormula textWithFormula = (TextWithFormula) o;
-
                 final LaTeXtView textView = new LaTeXtView(mContext);
-
                 textView.setTextWithFormula(textWithFormula);
-
                 textView.setMovementMethod(LinkMovementMethod.getInstance());
+                textView.setTextSize(textSize);
+                textView.setTextColor(textColor);
                 myAddView(textView);
             } else if (o instanceof CodeView) {
                 myAddView((CodeView) o);
@@ -392,6 +434,7 @@ public class FlexibleRichTextView extends LinearLayout {
             return builder;
         }
     }
+
     private void append(List<Object> list, Object element) {
         concat(list, Collections.singletonList(element));
     }
@@ -796,7 +839,9 @@ public class FlexibleRichTextView extends LinearLayout {
 
     public interface OnViewClickListener {
         void onImgClick(ImageView imageView);
+
         void onAttClick(Attachment attachment);
+
         void onQuoteButtonClick(View view, boolean collapsed);
     }
 }
