@@ -179,6 +179,7 @@ public class FlexibleRichTextView extends LinearLayout {
                 textView.setMovementMethod(LinkMovementMethod.getInstance());
                 textView.setTextSize(SizeUtil.px2sp(textSize));
                 textView.setTextColor(textColor);
+                textView.setLineSpacing(10, 1);
                 textView.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
