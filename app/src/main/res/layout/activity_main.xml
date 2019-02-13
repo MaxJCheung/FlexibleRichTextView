@@ -19,6 +19,6 @@
             android:id="@+id/frtv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:textSize="60sp" />
+            app:textSize="20sp" />
     </ScrollView>
 </RelativeLayout>

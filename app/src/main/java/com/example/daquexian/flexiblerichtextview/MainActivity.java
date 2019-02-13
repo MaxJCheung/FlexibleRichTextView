@@ -1,7 +1,7 @@
 package com.example.daquexian.flexiblerichtextview;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
 import com.daquexian.flexiblerichtextview.Attachment;
 import com.daquexian.flexiblerichtextview.FlexibleRichTextView;
@@ -35,22 +35,7 @@ public class MainActivity extends AppCompatActivity {
         Tokenizer.setTitleStartLabels("<h>");
         Tokenizer.setTitleEndLabels("</h>");
 
-        flexibleRichTextView.setText("<h><center>hi!</center></h>" +
-                        "[quote]This is quote\n" +
-                        "second line\n" +
-                        "third line\n" +
-                        "fourth line[/quote]" +
-                        "Here is an attachment:[attachment:53ce1]" +
-                        "[code]print(\"Hello FlexibleRichTextView!\")[/code]" +
-                        "Hello FlexibleRichTextView!\n" +
-                        "This is LaTeX:\n" +
-                        "$e^{\\pi i} + 1 = 0$\n" +
-                        "This is table:\n" +
-                        "| First Header  | Second Header |\n" +
-                        "| --- | --- |\n" +
-                        "| Content Cell  | Content Cell  |\n" +
-                        "| Content Cell  | Content Cell  |\n" +
-                        "An attachment is shown at the bottom: \n",
+        flexibleRichTextView.setText("如图所示长方形ABCD中的AB=10cm，BC=5cm，设AB和AD分别为半径作半圆，则图中阴影部分的面积为（  ）\\n ![cmd-markdown-logo](http://luoji.oss-cn-qingdao.aliyuncs.com/math%2F2008J-7.png)",
                 attachments);
     }
 }
