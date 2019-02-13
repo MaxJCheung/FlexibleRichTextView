@@ -77,7 +77,8 @@ public class Tokenizer {
         public int compareTo(@NotNull TOKEN token) {
             if (position < token.position) {
                 return -1;
-            } if (position == token.position) {
+            }
+            if (position == token.position) {
                 /**
                  * tokenA < tokenB when tokenA.position == tokenB.position and
                  * tokenA.length > tokenB.length,
@@ -119,6 +120,7 @@ public class Tokenizer {
 
     static class URL_START extends TOKEN {
         String url;
+
         URL_START(int position, String url, String value) {
             super(position, value.length(), value);
             this.url = url;
@@ -220,6 +222,7 @@ public class Tokenizer {
 
     static class ATTACHMENT extends TOKEN {
         Attachment attachment;
+
         ATTACHMENT(int position, Attachment attachment, String value) {
             super(position, value.length(), value);
             this.attachment = attachment;
@@ -228,6 +231,7 @@ public class Tokenizer {
 
     static class ICON extends TOKEN {
         int iconId;
+
         ICON(int position, String iconStr, int iconId) {
             super(position, iconStr.length(), iconStr);
             this.iconId = iconId;
@@ -237,6 +241,7 @@ public class Tokenizer {
     static class FORMULA extends TOKEN {
         String content;
         int contentStart;
+
         FORMULA(int position, String content, int contentStart, String value) {
             /*
              * remove all newline character to avoid the ImageSpan shows multiple times when
@@ -263,6 +268,7 @@ public class Tokenizer {
     static class QUOTE_START extends TOKEN {
         String quotedUsername;
         String postId;
+
         QUOTE_START(int position, String value, String quotedUsername, String postId) {
             super(position, value.length(), value);
             this.quotedUsername = quotedUsername;
@@ -320,6 +326,7 @@ public class Tokenizer {
             this.heightPos = heightPos;
             this.urlPos = urlPos;
         }
+
         public ImgPos(byte sizePos, byte urlPos) {
             this.sizePos = sizePos;
             this.urlPos = urlPos;
@@ -703,7 +710,6 @@ public class Tokenizer {
     }
 
 
-
     private static String formatLabel(String label) {
         return "(?i)" + label.replaceAll("\\[", "\\\\[").replaceAll("\\(", "\\\\(");
     }
@@ -728,7 +734,7 @@ public class Tokenizer {
         setColorEndLabels("[/c]", "[/color]");
         setQuoteStartLabels("[quote]", "[quote=\\p:@\\m]");
         setQuoteEndLabels("[/quote]");
-        setImageLabels("![cmd-markdown-logo](\\u\\)", "[img=\\s]\\u[/img]");
+        setImageLabels("![cmd-markdown-logo](\\u\\)", "[img]\\u[/img]", "[img=\\s]\\u[/img]");
         setDeleteStartLabels("[s]");
         setDeleteEndLabels("[/s]");
         setUnderlineStartLabels("[u]");
@@ -1005,7 +1011,8 @@ public class Tokenizer {
                 /**
                  * only show icons when iconStr is surrounded by spaces
                  */
-                if (iconStr.equals("/^^")) Log.d(TAG, "parse: " + str.trim().length() + ", " + iconStr.length() + ", " + (from + iconStr.length()) + ", " + str.length());
+                if (iconStr.equals("/^^"))
+                    Log.d(TAG, "parse: " + str.trim().length() + ", " + iconStr.length() + ", " + (from + iconStr.length()) + ", " + str.length());
                 if (str.trim().length() == iconStr.length() ||
                         ((from == 0 || ' ' == str.charAt(from - 1)) && (from + iconStr.length() == str.length() || ' ' == str.charAt(from + iconStr.length()) || '\n' == str.charAt(from + iconStr.length())))) {
                     tokenList.add(new ICON(from, iconStr, icons.get(i)));
