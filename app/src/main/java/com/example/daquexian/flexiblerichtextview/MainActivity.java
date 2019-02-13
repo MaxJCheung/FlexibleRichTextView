@@ -12,7 +12,6 @@ import org.scilab.forge.jlatexmath.core.AjLatexMath;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.github.kbiakov.codeview.classifier.CodeProcessor;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // train classifier on app start
-        CodeProcessor.init(this);
         AjLatexMath.init(this); // init library: load fonts, create paint, etc.
 
         List<Attachment> attachments = new ArrayList<>();
