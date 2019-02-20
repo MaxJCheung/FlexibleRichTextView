@@ -110,6 +110,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private float textSize;
 
+    private LaTeXtView textView;
+
     public FlexibleRichTextView(Context context) {
         this(context, null, true);
     }
@@ -173,7 +175,7 @@ public class FlexibleRichTextView extends LinearLayout {
         for (final Object o : result) {
             if (o instanceof TextWithFormula) {
                 final TextWithFormula textWithFormula = (TextWithFormula) o;
-                final LaTeXtView textView = new LaTeXtView(mContext);
+                textView = new LaTeXtView(mContext);
                 textView.setLaTexSize(SizeUtil.px2sp(textSize));
                 textView.setTextWithFormula(textWithFormula);
                 textView.setMovementMethod(LinkMovementMethod.getInstance());
@@ -212,6 +214,13 @@ public class FlexibleRichTextView extends LinearLayout {
         mTokenList = tokenizer(text, mAttachmentList);
 
         setToken(mTokenList, attachmentList);
+    }
+
+    public String getText() {
+        if (null == textView) {
+            return "";
+        }
+        return textView.getText().toString();
     }
 
     private void myAddView(View view) {
