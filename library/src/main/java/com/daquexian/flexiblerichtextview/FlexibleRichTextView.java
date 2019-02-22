@@ -35,6 +35,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -108,6 +109,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private int textColor;
 
+    private int maxLines;
+
     private float textSize;
 
     private LaTeXtView textView;
@@ -143,6 +146,7 @@ public class FlexibleRichTextView extends LinearLayout {
         TypedArray a = mContext.obtainStyledAttributes(attributeSet, R.styleable.FlexibleRichTextView);
         textColor = a.getColor(R.styleable.FlexibleRichTextView_textColor, 0XFF000000);
         textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, SizeUtil.sp2px(20));
+        maxLines = a.getInteger(R.styleable.FlexibleRichTextView_maxLine, -1);
         a.recycle();
     }
 
@@ -182,6 +186,9 @@ public class FlexibleRichTextView extends LinearLayout {
                 textView.setTextSize(SizeUtil.px2sp(textSize));
                 textView.setTextColor(textColor);
                 textView.setLineSpacing(10, 1);
+                if (maxLines != -1) {
+                    textView.setMaxLines(maxLines);
+                }
                 textView.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
