@@ -734,7 +734,7 @@ public class Tokenizer {
         setColorEndLabels("[/c]", "[/color]");
         setQuoteStartLabels("[quote]", "[quote=\\p:@\\m]");
         setQuoteEndLabels("[/quote]");
-        setImageLabels("![cmd-markdown-logo](\\u\\)", "[img]\\u[/img]", "[img=\\s]\\u[/img]");
+        setImageLabels("![\\S*](\\u\\)","![cmd-markdown-logo](\\u\\)", "[img]\\u[/img]", "[img=\\s]\\u[/img]");
         setDeleteStartLabels("[s]");
         setDeleteEndLabels("[/s]");
         setUnderlineStartLabels("[u]");
