@@ -420,7 +420,7 @@ public class TeXFormula {
 			f.add(new EmptyAtom());
 			return f;
 		}
-		TeXParser parser = new TeXParser(true, formula, f);
+		TeXParser parser = new TeXParser(true, formula, f,true);
 		try {
 			parser.parse();
 		} catch (Exception e) {
