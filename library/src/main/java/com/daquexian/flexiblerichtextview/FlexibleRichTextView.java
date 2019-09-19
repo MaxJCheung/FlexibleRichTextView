@@ -35,7 +35,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -111,6 +110,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private int maxLines;
 
+    private boolean pureText = false;
+
     private float textSize;
 
     private LaTeXtView textView;
@@ -147,67 +148,8 @@ public class FlexibleRichTextView extends LinearLayout {
         textColor = a.getColor(R.styleable.FlexibleRichTextView_textColor, 0XFF000000);
         textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, SizeUtil.sp2px(20));
         maxLines = a.getInteger(R.styleable.FlexibleRichTextView_maxLine, -1);
+        pureText = a.getBoolean(R.styleable.FlexibleRichTextView_frtv_pureText, pureText);
         a.recycle();
-    }
-
-    public void setToken(List<TOKEN> tokens, List<Attachment> attachmentList) {
-        removeAllViews();
-
-        mAttachmentList = attachmentList;
-        mTokenList = tokens;
-
-        for (TOKEN token : tokens) {
-            if (token instanceof ATTACHMENT) {
-                mAttachmentList.remove(((ATTACHMENT) token).attachment);
-            }
-        }
-
-        resetTokenIndex();
-        List<Object> result = until(END.class);
-
-        if (mShowRemainingAtt) {
-            // remaining attachments will show at the bottom of view
-            for (Attachment att : mAttachmentList) {
-                append(result, attachment(att));
-            }
-        }
-
-        if (result == null) {
-            return;
-        }
-
-        for (final Object o : result) {
-            if (o instanceof TextWithFormula) {
-                final TextWithFormula textWithFormula = (TextWithFormula) o;
-                textView = new LaTeXtView(mContext);
-                textView.setLaTexSize(SizeUtil.px2sp(textSize));
-                textView.setTextWithFormula(textWithFormula);
-                textView.setMovementMethod(LinkMovementMethod.getInstance());
-                textView.setTextSize(SizeUtil.px2sp(textSize));
-                textView.setTextColor(textColor);
-                textView.setLineSpacing(10, 1);
-                if (maxLines != -1) {
-                    textView.setMaxLines(maxLines);
-                }
-                textView.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (null != mOnViewClickListener) {
-                            mOnViewClickListener.onViewClick();
-                        }
-                    }
-                });
-                myAddView(textView);
-            } else if (o instanceof CodeView) {
-                myAddView((CodeView) o);
-            } else if (o instanceof ImageView) {
-                myAddView((ImageView) o);
-            } else if (o instanceof HorizontalScrollView) {
-                myAddView((HorizontalScrollView) o);
-            } else if (o instanceof QuoteView) {
-                myAddView((QuoteView) o);
-            }
-        }
     }
 
     public void setText(String text) {
@@ -216,10 +158,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     public void setText(String text, List<Attachment> attachmentList) {
         text = text.replaceAll("\u00AD", "");
-
         mAttachmentList = attachmentList;
         mTokenList = tokenizer(text, mAttachmentList);
-
         setToken(mTokenList, attachmentList);
     }
 
@@ -230,9 +170,85 @@ public class FlexibleRichTextView extends LinearLayout {
         return textView.getText().toString();
     }
 
+    public void setToken(List<TOKEN> tokens, List<Attachment> attachmentList) {
+        mAttachmentList = attachmentList;
+        mTokenList = tokens;
+        for (TOKEN token : tokens) {
+            if (token instanceof ATTACHMENT) {
+                mAttachmentList.remove(((ATTACHMENT) token).attachment);
+            }
+        }
+        resetTokenIndex();
+        if (maxLines <= 0) {
+            setTokenResult();
+        } else {
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    setTokenResult();
+                }
+            });
+        }
+    }
+
+    private void setTokenResult() {
+        removeAllViews();
+        boolean useLinesLimit = maxLines > 0;
+        int linesLimit = maxLines;
+        final List<Object> result = until(END.class);
+        if (mShowRemainingAtt) {
+            for (Attachment att : mAttachmentList) {
+                append(result, attachment(att));
+            }
+        }
+        if (result == null) {
+            return;
+        }
+        for (final Object o : result) {
+            if (useLinesLimit && linesLimit <= 0) {
+                break;
+            }
+            if (o instanceof TextWithFormula) {
+                final TextWithFormula textWithFormula = (TextWithFormula) o;
+                textView = new LaTeXtView(mContext);
+                textView.setLaTexSize(SizeUtil.px2sp(textSize));
+                textView.setTextWithFormula(textWithFormula);
+                textView.setMovementMethod(LinkMovementMethod.getInstance());
+                textView.setTextSize(SizeUtil.px2sp(textSize));
+                textView.setTextColor(textColor);
+                textView.setLineSpacing(10, 1);
+                textView.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (null != mOnViewClickListener) {
+                            mOnViewClickListener.onViewClick();
+                        }
+                    }
+                });
+                myAddView(textView);
+                if (useLinesLimit) {
+                    textView.setMaxLines(linesLimit);
+                    int lines = TextViewLinesUtil.getTextViewLines(textView, getWidth());
+                    linesLimit -= lines;
+                }
+            } else if (o instanceof CodeView) {
+                myAddView((CodeView) o);
+                if (useLinesLimit) linesLimit--;
+            } else if (o instanceof ImageView) {
+                myAddView((ImageView) o);
+                if (useLinesLimit) linesLimit--;
+            } else if (o instanceof HorizontalScrollView) {
+                myAddView((HorizontalScrollView) o);
+                if (useLinesLimit) linesLimit--;
+            } else if (o instanceof QuoteView) {
+                myAddView((QuoteView) o);
+                if (useLinesLimit) linesLimit--;
+            }
+        }
+    }
+
     private void myAddView(View view) {
         if (view instanceof FImageView && ((FImageView) view).centered) {
-            // TODO: 17-2-13 any more efficient way?
             RelativeLayout rl = new RelativeLayout(mContext);
             RelativeLayout.LayoutParams rlLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             rlLp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
@@ -311,122 +327,129 @@ public class FlexibleRichTextView extends LinearLayout {
             if (!flag) {
                 if (thisToken() instanceof PLAIN) {
                     append(ret, new TextWithFormula(thisToken().value));
-
                 } else if (thisToken() instanceof ICON) {
-                    final ICON thisToken = (ICON) thisToken();
-
-                    TextWithFormula textWithFormula = new TextWithFormula(thisToken.value);
-                    textWithFormula.setSpan(new ImageSpan(mContext, thisToken.iconId), 0,
-                            thisToken.value.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-
-                    append(ret, textWithFormula);
-
+                    if (!pureText) {
+                        final ICON thisToken = (ICON) thisToken();
+                        TextWithFormula textWithFormula = new TextWithFormula(thisToken.value);
+                        textWithFormula.setSpan(new ImageSpan(mContext, thisToken.iconId), 0,
+                                thisToken.value.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                        append(ret, textWithFormula);
+                    } else {
+                        append(ret, new TextWithFormula("[图标]"));
+                    }
                 } else if (thisToken() instanceof FORMULA) {
-
-                    FORMULA thisToken = (FORMULA) thisToken();
-
-                    TextWithFormula textWithFormula = new TextWithFormula(thisToken().value);
-
-                    textWithFormula.addFormula(0, thisToken.value.length(),
-                            thisToken.content, thisToken.contentStart,
-                            thisToken.contentStart + thisToken.content.length());
-
-                    append(ret, textWithFormula);
-
+                    if (!pureText) {
+                        FORMULA thisToken = (FORMULA) thisToken();
+                        TextWithFormula textWithFormula = new TextWithFormula(thisToken().value);
+                        textWithFormula.addFormula(0, thisToken.value.length(),
+                                thisToken.content, thisToken.contentStart,
+                                thisToken.contentStart + thisToken.content.length());
+                        append(ret, textWithFormula);
+                    } else {
+                        append(ret, new TextWithFormula("[公式]"));
+                    }
                 } else if (thisToken() instanceof CODE_START) {
-                    /**
-                     * [code][code][/code][/code][/code] shows [code][/code][/code]
-                     */
-                    tmp = getTokenIndex();
-                    int i = 1;
-                    StringBuilder string = new StringBuilder("");
-                    StringBuilder substring = new StringBuilder("");
-                    next();
-                    while (!(thisToken() instanceof END)) {
-                        if (thisToken() instanceof CODE_START) {
-                            i++;
-                        }
-                        if (thisToken() instanceof CODE_END) {
-                            i--;
-                            if (i == 0) {
-                                string.append(substring);
-                                break;
-                            }
-                            string.append(substring);
-                            substring.delete(0, substring.length());
-                            tmp = getTokenIndex() + 1;
-                        }
-                        substring.append(thisToken().value);
+                    if (!pureText) {
+                        tmp = getTokenIndex();
+                        int i = 1;
+                        StringBuilder string = new StringBuilder("");
+                        StringBuilder substring = new StringBuilder("");
                         next();
-                    }
-
-                    if (i == 0) {
-                        final CodeView codeView = (CodeView) LayoutInflater.from(mContext).inflate(R.layout.code_view, this, false);
-                        codeView.setCode(string.toString());
-                        ret.add(codeView);
-                    } else if (!TextUtils.isEmpty(string)) {
-                        setTokenIndex(tmp);
-                        final CodeView codeView = (CodeView) LayoutInflater.from(mContext).inflate(R.layout.code_view, this, false);
-                        codeView.setCode(string.toString());
-                        ret.add(codeView);
-                    } else {
-                        setTokenIndex(tmp);
-                        append(ret, new TextWithFormula(thisToken().value));
-                    }
-
-                } else if (thisToken() instanceof IMAGE) {
-
-                    IMAGE thisToken = (IMAGE) thisToken();
-                    FImageView imageView = loadImage(thisToken.url, thisToken.width, thisToken.height);
-                    if (mCenter) {
-                        imageView.centered = true;
-                    }
-                    append(ret, imageView);
-
-                } else if (thisToken() instanceof TABLE) {
-
-                    View table = table(thisToken().value);
-                    append(ret, table);
-
-                } else if (thisToken() instanceof ATTACHMENT) {
-
-                    final ATTACHMENT thisToken = (ATTACHMENT) thisToken();
-
-                    append(ret, attachment(thisToken.attachment));
-
-                } else if (thisToken() instanceof QUOTE_START) {
-                    int i = 1;
-                    List<TOKEN> tokens = new ArrayList<>();
-                    next();
-                    while (!(thisToken() instanceof END)) {
-                        if (thisToken() instanceof QUOTE_START) {
-                            i++;
-                            while (i > 0) {
-                                next();
-                                if (thisToken() instanceof QUOTE_START) {
-                                    i++;
-                                } else if (thisToken() instanceof QUOTE_END) {
-                                    i--;
+                        while (!(thisToken() instanceof END)) {
+                            if (thisToken() instanceof CODE_START) {
+                                i++;
+                            }
+                            if (thisToken() instanceof CODE_END) {
+                                i--;
+                                if (i == 0) {
+                                    string.append(substring);
+                                    break;
                                 }
+                                string.append(substring);
+                                substring.delete(0, substring.length());
+                                tmp = getTokenIndex() + 1;
                             }
-                        } else if (thisToken() instanceof QUOTE_END) {
-                            tokens.add(new END(thisToken().position));
-                            break;
-                        } else {
-                            tokens.add(thisToken());
+                            substring.append(thisToken().value);
+                            next();
                         }
-                        next();
-                    }
 
-                    if (thisToken() instanceof QUOTE_END) {
-                        final QuoteView quoteView = QuoteView.newInstance(this, mQuoteViewId);
-                        quoteView.setAttachmentList(mAttachmentList);
-                        quoteView.setPadding(0, 8, 0, 8);
-                        quoteView.setTokens(tokens);
-                        quoteView.setOnButtonClickListener(mOnViewClickListener);
-                        ret.add(quoteView);
+                        if (i == 0) {
+                            final CodeView codeView = (CodeView) LayoutInflater.from(mContext).inflate(R.layout.code_view, this, false);
+                            codeView.setCode(string.toString());
+                            ret.add(codeView);
+                        } else if (!TextUtils.isEmpty(string)) {
+                            setTokenIndex(tmp);
+                            final CodeView codeView = (CodeView) LayoutInflater.from(mContext).inflate(R.layout.code_view, this, false);
+                            codeView.setCode(string.toString());
+                            ret.add(codeView);
+                        } else {
+                            setTokenIndex(tmp);
+                            append(ret, new TextWithFormula(thisToken().value));
+                        }
                     } else {
-                        append(ret, new TextWithFormula(thisToken().value));
+                        append(ret, new TextWithFormula("[代码]"));
+                    }
+                } else if (thisToken() instanceof IMAGE) {
+                    if (!pureText) {
+                        IMAGE thisToken = (IMAGE) thisToken();
+                        FImageView imageView = loadImage(thisToken.url, thisToken.width, thisToken.height);
+                        if (mCenter) {
+                            imageView.centered = true;
+                        }
+                        append(ret, imageView);
+                    } else {
+                        append(ret, new TextWithFormula("[图片]"));
+                    }
+                } else if (thisToken() instanceof TABLE) {
+                    if (!pureText) {
+                        View table = table(thisToken().value);
+                        append(ret, table);
+                    } else {
+                        append(ret, new TextWithFormula("[表格]"));
+                    }
+                } else if (thisToken() instanceof ATTACHMENT) {
+                    if (!pureText) {
+                        final ATTACHMENT thisToken = (ATTACHMENT) thisToken();
+                        append(ret, attachment(thisToken.attachment));
+                    } else {
+                        append(ret, new TextWithFormula("[附件]"));
+                    }
+                } else if (thisToken() instanceof QUOTE_START) {
+                    if (!pureText) {
+                        int i = 1;
+                        List<TOKEN> tokens = new ArrayList<>();
+                        next();
+                        while (!(thisToken() instanceof END)) {
+                            if (thisToken() instanceof QUOTE_START) {
+                                i++;
+                                while (i > 0) {
+                                    next();
+                                    if (thisToken() instanceof QUOTE_START) {
+                                        i++;
+                                    } else if (thisToken() instanceof QUOTE_END) {
+                                        i--;
+                                    }
+                                }
+                            } else if (thisToken() instanceof QUOTE_END) {
+                                tokens.add(new END(thisToken().position));
+                                break;
+                            } else {
+                                tokens.add(thisToken());
+                            }
+                            next();
+                        }
+                        if (thisToken() instanceof QUOTE_END) {
+                            final QuoteView quoteView = QuoteView.newInstance(this, mQuoteViewId);
+                            quoteView.setAttachmentList(mAttachmentList);
+                            quoteView.setPadding(0, 8, 0, 8);
+                            quoteView.setTokens(tokens);
+                            quoteView.setOnButtonClickListener(mOnViewClickListener);
+                            ret.add(quoteView);
+                        } else {
+                            append(ret, new TextWithFormula(thisToken().value));
+                        }
+                    } else {
+                        append(ret, new TextWithFormula("[引用]"));
                     }
                 }
             }
