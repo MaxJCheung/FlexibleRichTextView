@@ -8,6 +8,7 @@
         <attr name="textColor" format="color" />
         <attr name="textSize" format="dimension" />
         <attr name="maxLine" format="integer" />
+        <attr name="frtv_pureText" format="boolean" />
     </declare-styleable>
 
 </resources>
