@@ -25,8 +25,6 @@ import android.widget.TextView;
 class TextViewLinesUtil {
     static int getTextViewLines(TextView textView, int textViewWidth) {
         int width = textViewWidth - textView.getCompoundPaddingLeft() - textView.getCompoundPaddingRight();
-        Log.i("TextViewLinesUtil", "textViewWidth=" + textViewWidth);
-        Log.i("TextViewLinesUtil", "textView.getText()=" + textView.getText());
         StaticLayout staticLayout;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             staticLayout = getStaticLayout23(textView, width);
@@ -34,12 +32,10 @@ class TextViewLinesUtil {
             staticLayout = getStaticLayout(textView, width);
         }
         int lines = staticLayout.getLineCount();
-        Log.i("TextViewLinesUtil", "lines=" + lines);
         int maxLines = textView.getMaxLines();
         if (maxLines > lines) {
             return lines;
         }
-        Log.i("TextViewLinesUtil", "maxLines=" + maxLines);
         return maxLines;
     }
 

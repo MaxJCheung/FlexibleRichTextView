@@ -25,6 +25,7 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -170,6 +171,14 @@ public class FlexibleRichTextView extends LinearLayout {
         return textView.getText().toString();
     }
 
+    private int currWidth = 0;
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        currWidth = w;
+    }
+
     public void setToken(List<TOKEN> tokens, List<Attachment> attachmentList) {
         mAttachmentList = attachmentList;
         mTokenList = tokens;
@@ -182,12 +191,17 @@ public class FlexibleRichTextView extends LinearLayout {
         if (maxLines <= 0) {
             setTokenResult();
         } else {
-            post(new Runnable() {
-                @Override
-                public void run() {
-                    setTokenResult();
-                }
-            });
+            if (currWidth > 0) {
+                setTokenResult();
+            } else {
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        currWidth = getWidth();
+                        setTokenResult();
+                    }
+                });
+            }
         }
     }
 
@@ -228,7 +242,8 @@ public class FlexibleRichTextView extends LinearLayout {
                 myAddView(textView);
                 if (useLinesLimit) {
                     textView.setMaxLines(linesLimit);
-                    int lines = TextViewLinesUtil.getTextViewLines(textView, getWidth());
+                    Log.i("frtv", "currWidth=" + currWidth);
+                    int lines = TextViewLinesUtil.getTextViewLines(textView, currWidth);
                     linesLimit -= lines;
                 }
             } else if (o instanceof CodeView) {
@@ -328,26 +343,18 @@ public class FlexibleRichTextView extends LinearLayout {
                 if (thisToken() instanceof PLAIN) {
                     append(ret, new TextWithFormula(thisToken().value));
                 } else if (thisToken() instanceof ICON) {
-                    if (!pureText) {
-                        final ICON thisToken = (ICON) thisToken();
-                        TextWithFormula textWithFormula = new TextWithFormula(thisToken.value);
-                        textWithFormula.setSpan(new ImageSpan(mContext, thisToken.iconId), 0,
-                                thisToken.value.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-                        append(ret, textWithFormula);
-                    } else {
-                        append(ret, new TextWithFormula("[图标]"));
-                    }
+                    final ICON thisToken = (ICON) thisToken();
+                    TextWithFormula textWithFormula = new TextWithFormula(thisToken.value);
+                    textWithFormula.setSpan(new ImageSpan(mContext, thisToken.iconId), 0,
+                            thisToken.value.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                    append(ret, textWithFormula);
                 } else if (thisToken() instanceof FORMULA) {
-                    if (!pureText) {
-                        FORMULA thisToken = (FORMULA) thisToken();
-                        TextWithFormula textWithFormula = new TextWithFormula(thisToken().value);
-                        textWithFormula.addFormula(0, thisToken.value.length(),
-                                thisToken.content, thisToken.contentStart,
-                                thisToken.contentStart + thisToken.content.length());
-                        append(ret, textWithFormula);
-                    } else {
-                        append(ret, new TextWithFormula("[公式]"));
-                    }
+                    FORMULA thisToken = (FORMULA) thisToken();
+                    TextWithFormula textWithFormula = new TextWithFormula(thisToken().value);
+                    textWithFormula.addFormula(0, thisToken.value.length(),
+                            thisToken.content, thisToken.contentStart,
+                            thisToken.contentStart + thisToken.content.length());
+                    append(ret, textWithFormula);
                 } else if (thisToken() instanceof CODE_START) {
                     if (!pureText) {
                         tmp = getTokenIndex();
@@ -408,48 +415,40 @@ public class FlexibleRichTextView extends LinearLayout {
                         append(ret, new TextWithFormula("[表格]"));
                     }
                 } else if (thisToken() instanceof ATTACHMENT) {
-                    if (!pureText) {
-                        final ATTACHMENT thisToken = (ATTACHMENT) thisToken();
-                        append(ret, attachment(thisToken.attachment));
-                    } else {
-                        append(ret, new TextWithFormula("[附件]"));
-                    }
+                    final ATTACHMENT thisToken = (ATTACHMENT) thisToken();
+                    append(ret, attachment(thisToken.attachment));
                 } else if (thisToken() instanceof QUOTE_START) {
-                    if (!pureText) {
-                        int i = 1;
-                        List<TOKEN> tokens = new ArrayList<>();
-                        next();
-                        while (!(thisToken() instanceof END)) {
-                            if (thisToken() instanceof QUOTE_START) {
-                                i++;
-                                while (i > 0) {
-                                    next();
-                                    if (thisToken() instanceof QUOTE_START) {
-                                        i++;
-                                    } else if (thisToken() instanceof QUOTE_END) {
-                                        i--;
-                                    }
+                    int i = 1;
+                    List<TOKEN> tokens = new ArrayList<>();
+                    next();
+                    while (!(thisToken() instanceof END)) {
+                        if (thisToken() instanceof QUOTE_START) {
+                            i++;
+                            while (i > 0) {
+                                next();
+                                if (thisToken() instanceof QUOTE_START) {
+                                    i++;
+                                } else if (thisToken() instanceof QUOTE_END) {
+                                    i--;
                                 }
-                            } else if (thisToken() instanceof QUOTE_END) {
-                                tokens.add(new END(thisToken().position));
-                                break;
-                            } else {
-                                tokens.add(thisToken());
                             }
-                            next();
-                        }
-                        if (thisToken() instanceof QUOTE_END) {
-                            final QuoteView quoteView = QuoteView.newInstance(this, mQuoteViewId);
-                            quoteView.setAttachmentList(mAttachmentList);
-                            quoteView.setPadding(0, 8, 0, 8);
-                            quoteView.setTokens(tokens);
-                            quoteView.setOnButtonClickListener(mOnViewClickListener);
-                            ret.add(quoteView);
+                        } else if (thisToken() instanceof QUOTE_END) {
+                            tokens.add(new END(thisToken().position));
+                            break;
                         } else {
-                            append(ret, new TextWithFormula(thisToken().value));
+                            tokens.add(thisToken());
                         }
+                        next();
+                    }
+                    if (thisToken() instanceof QUOTE_END) {
+                        final QuoteView quoteView = QuoteView.newInstance(this, mQuoteViewId);
+                        quoteView.setAttachmentList(mAttachmentList);
+                        quoteView.setPadding(0, 8, 0, 8);
+                        quoteView.setTokens(tokens);
+                        quoteView.setOnButtonClickListener(mOnViewClickListener);
+                        ret.add(quoteView);
                     } else {
-                        append(ret, new TextWithFormula("[引用]"));
+                        append(ret, new TextWithFormula(thisToken().value));
                     }
                 }
             }
