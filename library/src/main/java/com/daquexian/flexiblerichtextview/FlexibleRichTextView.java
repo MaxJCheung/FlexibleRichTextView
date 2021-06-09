@@ -6,12 +6,12 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
@@ -25,7 +25,6 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,13 +35,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.RequestOptions;
-import com.bumptech.glide.request.target.Target;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,6 +89,7 @@ public class FlexibleRichTextView extends LinearLayout {
     private int mConversationId;
     private List<Attachment> mAttachmentList;
     private OnViewClickListener mOnViewClickListener;
+    private OnSetTokenResultCallback mOnSetTokenResultCallback;
 
     private List<Tokenizer.TOKEN> mTokenList;
     private int mTokenIndex;
@@ -111,11 +104,22 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private int maxLines;
 
+    private int linesLimit = 0;
+    private float linesWidth = SizeUtil.screenWidth();
+    private float lineSpacing = 10;
+
+    private boolean textIsSelectable = false;
     private boolean pureText = false;
 
     private float textSize;
 
     private LaTeXtView textView;
+
+    private static IFlexibleRichImageLoader mImageLoader = null;
+
+    public static void setImageLoader(IFlexibleRichImageLoader imageLoader) {
+        mImageLoader = imageLoader;
+    }
 
     public FlexibleRichTextView(Context context) {
         this(context, null, true);
@@ -150,7 +154,89 @@ public class FlexibleRichTextView extends LinearLayout {
         textSize = a.getDimension(R.styleable.FlexibleRichTextView_textSize, SizeUtil.sp2px(20));
         maxLines = a.getInteger(R.styleable.FlexibleRichTextView_maxLine, -1);
         pureText = a.getBoolean(R.styleable.FlexibleRichTextView_frtv_pureText, pureText);
+        textIsSelectable = a.getBoolean(R.styleable.FlexibleRichTextView_textIsSelectable, textIsSelectable);
+        linesLimit = a.getInteger(R.styleable.FlexibleRichTextView_frtv_linesLimit, 0);
+        linesWidth = a.getDimension(R.styleable.FlexibleRichTextView_frtv_linesWidth, linesWidth);
+        lineSpacing = a.getDimension(R.styleable.FlexibleRichTextView_frtv_lineSpacing, lineSpacing);
         a.recycle();
+    }
+
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+    }
+
+    public int getTextColor() {
+        return textColor;
+    }
+
+    public void setTextSize(float textSize) {
+        this.textSize = textSize;
+    }
+
+    public float getTextSize() {
+        return textSize;
+    }
+
+    public void setTextIsSelectable(boolean textIsSelectable) {
+        this.textIsSelectable = textIsSelectable;
+    }
+
+    public boolean isTextIsSelectable() {
+        return textIsSelectable;
+    }
+
+    public void setLinesLimit(int linesLimit) {
+        this.linesLimit = linesLimit;
+    }
+
+    public int getLinesLimit() {
+        return linesLimit;
+    }
+
+    public void setLinesWidth(float linesWidth) {
+        this.linesWidth = linesWidth;
+    }
+
+    public float getLinesWidth() {
+        return linesWidth;
+    }
+
+    public void setLineSpacing(float lineSpacing) {
+        this.lineSpacing = lineSpacing;
+    }
+
+    public float getLineSpacing() {
+        return lineSpacing;
+    }
+
+    public void setMaxLines(int maxLines) {
+        this.maxLines = maxLines;
+    }
+
+    public int getMaxLines() {
+        return maxLines;
+    }
+
+    public void setPureText(boolean pureText) {
+        this.pureText = pureText;
+    }
+
+    public boolean isPureText() {
+        return pureText;
+    }
+
+    public void setText(CharSequence text) {
+        setText(text, new ArrayList<Attachment>());
+    }
+
+    public void setText(CharSequence text, List<Attachment> attachmentList) {
+        mAttachmentList = attachmentList;
+        mTokenList = tokenizer(text, mAttachmentList);
+        setToken(mTokenList, attachmentList);
+    }
+
+    public void setOnSetTokenResultCallback(OnSetTokenResultCallback mOnSetTokenResultCallback) {
+        this.mOnSetTokenResultCallback = mOnSetTokenResultCallback;
     }
 
     public void setText(String text) {
@@ -171,14 +257,6 @@ public class FlexibleRichTextView extends LinearLayout {
         return textView.getText().toString();
     }
 
-    private int currWidth = 0;
-
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        currWidth = w;
-    }
-
     public void setToken(List<TOKEN> tokens, List<Attachment> attachmentList) {
         mAttachmentList = attachmentList;
         mTokenList = tokens;
@@ -188,27 +266,15 @@ public class FlexibleRichTextView extends LinearLayout {
             }
         }
         resetTokenIndex();
-        if (maxLines <= 0) {
+        if (linesLimit > 0) {
             setTokenResult();
         } else {
-            if (currWidth > 0) {
-                setTokenResult();
-            } else {
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        currWidth = getWidth();
-                        setTokenResult();
-                    }
-                });
-            }
+            setTokenResult();
         }
     }
 
     private void setTokenResult() {
         removeAllViews();
-        boolean useLinesLimit = maxLines > 0;
-        int linesLimit = maxLines;
         final List<Object> result = until(END.class);
         if (mShowRemainingAtt) {
             for (Attachment att : mAttachmentList) {
@@ -218,19 +284,29 @@ public class FlexibleRichTextView extends LinearLayout {
         if (result == null) {
             return;
         }
+        boolean useLinesLimit = linesLimit > 0;
+        int lines = linesLimit;
         for (final Object o : result) {
-            if (useLinesLimit && linesLimit <= 0) {
+            if (useLinesLimit && lines <= 0) {
                 break;
             }
             if (o instanceof TextWithFormula) {
                 final TextWithFormula textWithFormula = (TextWithFormula) o;
                 textView = new LaTeXtView(mContext);
-                textView.setLaTexSize(SizeUtil.px2sp(textSize));
-                textView.setTextWithFormula(textWithFormula);
-                textView.setMovementMethod(LinkMovementMethod.getInstance());
+                textView.setTextIsSelectable(textIsSelectable);
+                textView.setOnFormulaParsedListener(new LaTeXtView.OnFormulaParsedListener() {
+                    @Override
+                    public void onFormulaParsed(@NonNull SpannableStringBuilder builder) {
+                        if (mOnSetTokenResultCallback != null) {
+                            mOnSetTokenResultCallback.onText(builder);
+                        }
+                    }
+                });
                 textView.setTextSize(SizeUtil.px2sp(textSize));
                 textView.setTextColor(textColor);
-                textView.setLineSpacing(10, 1);
+                textView.setLineSpacing(lineSpacing, 1);
+                textView.setTextWithFormula(textWithFormula);
+                textView.setMovementMethod(LinkMovementMethod.getInstance());
                 textView.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -239,39 +315,45 @@ public class FlexibleRichTextView extends LinearLayout {
                         }
                     }
                 });
-                myAddView(textView);
                 if (useLinesLimit) {
                     textView.setMaxLines(linesLimit);
-                    Log.i("frtv", "currWidth=" + currWidth);
-                    int lines = TextViewLinesUtil.getTextViewLines(textView, currWidth);
-                    linesLimit -= lines;
+                    lines -= TextViewLinesUtil.getTextViewLines(textView, (int) linesWidth);
+                } else {
+                    if (maxLines > 0) {
+                        textView.setMaxLines(maxLines);
+                    }
                 }
+                myAddView(textView);
             } else if (o instanceof CodeView) {
                 myAddView((CodeView) o);
-                if (useLinesLimit) linesLimit--;
+                if (useLinesLimit) lines--;
             } else if (o instanceof ImageView) {
                 myAddView((ImageView) o);
-                if (useLinesLimit) linesLimit--;
+                if (useLinesLimit) lines--;
             } else if (o instanceof HorizontalScrollView) {
                 myAddView((HorizontalScrollView) o);
-                if (useLinesLimit) linesLimit--;
+                if (useLinesLimit) lines--;
             } else if (o instanceof QuoteView) {
                 myAddView((QuoteView) o);
-                if (useLinesLimit) linesLimit--;
+                if (useLinesLimit) lines--;
             }
         }
     }
 
     private void myAddView(View view) {
+        LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);;
+        if (getChildCount() > 0) {
+            layoutParams.topMargin = (int) lineSpacing;
+        }
         if (view instanceof FImageView && ((FImageView) view).centered) {
             RelativeLayout rl = new RelativeLayout(mContext);
             RelativeLayout.LayoutParams rlLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             rlLp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
             rl.addView(view);
             rl.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            addView(rl);
+            addView(rl, layoutParams);
         } else {
-            addView(view);
+            addView(view, layoutParams);
         }
     }
 
@@ -539,39 +621,32 @@ public class FlexibleRichTextView extends LinearLayout {
 
         final int finalWidth = imgWidth;
         final int finalHeight = imgHeight;
-        Glide.with(mContext)
-                .load(url)
-                .apply(new RequestOptions().placeholder(new ColorDrawable(ContextCompat.getColor(mContext, android.R.color.darker_gray))))
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        return false;
+
+        if (mImageLoader == null) {
+            throw new NullPointerException("FlexibleRichTextView has no image loader");
+        } else {
+            mImageLoader.loadImageDrawable(imageView, url, new FlexibleRichImageLoadCallback() {
+                @Override
+                public void onDrawableLoaded(Drawable resource) {
+                    if (imageView.centered) {
+                        final RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(finalWidth, finalHeight);
+                        params.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
+                        imageView.setLayoutParams(params);
+                    } else {
+                        imageView.setLayoutParams(new LinearLayout.LayoutParams(finalWidth, finalHeight));
                     }
-
-                    @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        if (imageView.centered) {
-                            final RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(finalWidth, finalHeight);
-                            params.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
-                            imageView.setLayoutParams(params);
-                        } else {
-                            imageView.setLayoutParams(new LinearLayout.LayoutParams(finalWidth, finalHeight));
-                        }
-
-                        imageView.setImageDrawable(resource);
-
-                        imageView.setOnClickListener(new OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                if (mOnViewClickListener != null) {
-                                    mOnViewClickListener.onImgClick(imageView);
-                                }
+                    imageView.setImageDrawable(resource);
+                    imageView.setOnClickListener(new OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            if (mOnViewClickListener != null) {
+                                mOnViewClickListener.onImgClick(imageView);
                             }
-                        });
-                        return false;
-                    }
-                })
-                .into(imageView);
+                        }
+                    });
+                }
+            });
+        }
         return imageView;
     }
 
@@ -894,5 +969,9 @@ public class FlexibleRichTextView extends LinearLayout {
         void onAttClick(Attachment attachment);
 
         void onQuoteButtonClick(View view, boolean collapsed);
+    }
+
+    public interface OnSetTokenResultCallback {
+        void onText(@NonNull SpannableStringBuilder builder);
     }
 }
