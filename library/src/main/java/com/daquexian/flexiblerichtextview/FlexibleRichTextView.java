@@ -117,6 +117,8 @@ public class FlexibleRichTextView extends LinearLayout {
 
     private LaTeXtView textView;
 
+    private List<LaTeXtView> textViewList;
+
     public FlexibleRichTextView(Context context) {
         this(context, null, true);
     }
@@ -218,6 +220,7 @@ public class FlexibleRichTextView extends LinearLayout {
         if (result == null) {
             return;
         }
+        textViewList = new ArrayList<>();
         for (final Object o : result) {
             if (useLinesLimit && linesLimit <= 0) {
                 break;
@@ -239,6 +242,7 @@ public class FlexibleRichTextView extends LinearLayout {
                         }
                     }
                 });
+                textViewList.add(textView);
                 myAddView(textView);
                 if (useLinesLimit) {
                     textView.setMaxLines(linesLimit);
