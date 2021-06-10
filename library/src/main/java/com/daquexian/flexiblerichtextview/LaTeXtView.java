@@ -15,6 +15,7 @@ import org.scilab.forge.jlatexmath.core.TeXConstants;
 import org.scilab.forge.jlatexmath.core.TeXFormula;
 import org.scilab.forge.jlatexmath.core.TeXIcon;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,6 +23,8 @@ import java.util.List;
  */
 
 public class LaTeXtView extends TextView {
+
+    private List<Bitmap> bitmapList;
 
     public interface OnFormulaParsedListener {
         void onFormulaParsed(@NonNull SpannableStringBuilder builder);
@@ -37,12 +40,14 @@ public class LaTeXtView extends TextView {
         super(context);
     }
 
-//    public void changeTextColor(){
-//         SpannableStringBuilder builder= (SpannableStringBuilder) getText();
-//        builder.
-//    }
+    @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        AjLatexMath.getPaint().setColor(color);
+    }
 
     public void setTextWithFormula(TextWithFormula textWithFormula) {
+        bitmapList = new ArrayList<Bitmap>();
         List<TextWithFormula.Formula> formulas = textWithFormula.getFormulas();
         final SpannableStringBuilder builder = textWithFormula;
         for (final TextWithFormula.Formula formula : formulas) {
@@ -54,9 +59,9 @@ public class LaTeXtView extends TextView {
                             bitmap.getHeight() * FlexibleRichTextView.MAX_IMAGE_WIDTH / bitmap.getWidth(),
                             false);
                 }
-
                 builder.setSpan(new CenteredImageSpan(getContext(), bitmap),
                         formula.start, formula.end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                bitmapList.add(bitmap);
             } catch (Exception e) {
             }
         }
@@ -69,7 +74,7 @@ public class LaTeXtView extends TextView {
     private Bitmap getBitmap(TeXFormula formula) {
         TeXIcon icon = formula.new TeXIconBuilder()
                 .setStyle(TeXConstants.STYLE_DISPLAY)
-                .setFGColor(getPaint().getColor())
+                .setFGColor(Color.RED)
                 .setSize(SizeUtil.px2sp(getPaint().getTextSize()))
                 .setWidth(TeXConstants.UNIT_SP, getPaint().getTextSize() / getPaint().density, TeXConstants.ALIGN_LEFT)
                 .setIsMaxWidth(true)
@@ -80,7 +85,6 @@ public class LaTeXtView extends TextView {
 
         Bitmap image = Bitmap.createBitmap(icon.getIconWidth(), icon.getIconHeight(),
                 Bitmap.Config.ARGB_4444);
-
         Canvas g2 = new Canvas(image);
         g2.drawColor(Color.TRANSPARENT);
         icon.paintIcon(g2, 0, 0);

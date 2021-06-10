@@ -15,6 +15,7 @@ import org.scilab.forge.jlatexmath.core.AjLatexMath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -59,7 +60,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.tv_change_color).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                tv.changeTextColor(Color.RED);
+//                tv.changeTextColor(Color.RED);
+                tv.setTextColor(Color.RED);
+                tv.setText("要使$3x^{2} + (m - 5)x + m^{2} - m - 2 = 0$\n的两根分别满足：$0 < x_{1} < 1,1 < x_{2} < 2.$\n\n（1）$- 2 < m < 0$\n\n（2）$- 3 < m < - \\frac{3}{2}$ .");
             }
         });
     }
@@ -69,11 +72,20 @@ public class MainActivity extends AppCompatActivity {
 
         private View.OnClickListener listener = null;
 
+        private ArrayList colorList= new ArrayList();
+
         void setListener(View.OnClickListener listener) {
             this.listener = listener;
         }
 
         void setList(List<String> list) {
+            colorList.add(Color.RED);
+            colorList.add(Color.BLUE);
+            colorList.add(Color.GREEN);
+            colorList.add(Color.DKGRAY);
+            colorList.add(Color.GRAY);
+            colorList.add(Color.MAGENTA);
+            colorList.add(Color.YELLOW);
             this.list = list;
             notifyDataSetChanged();
         }
@@ -99,7 +111,11 @@ public class MainActivity extends AppCompatActivity {
 
             Holder(View itemView) {
                 super(itemView);
+                Random random = new Random();
+                int n = random.nextInt(colorList.size());
+
                 frtv = itemView.findViewById(R.id.frtv);
+                frtv.setTextColor((Integer) colorList.get(n));
                 itemView.setOnClickListener(listener);
             }
         }

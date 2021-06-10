@@ -36,6 +36,8 @@ import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 
+import org.scilab.forge.jlatexmath.core.AjLatexMath;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -142,6 +144,7 @@ public class FlexibleRichTextView extends LinearLayout {
         super(context, attributeSet);
         init(context);
         initAttr(attributeSet);
+
     }
 
     public FlexibleRichTextView(Context context, AttributeSet attributeSet, int defStyleAttr) {
@@ -161,6 +164,9 @@ public class FlexibleRichTextView extends LinearLayout {
         linesWidth = a.getDimension(R.styleable.FlexibleRichTextView_frtv_linesWidth, linesWidth);
         lineSpacing = a.getDimension(R.styleable.FlexibleRichTextView_frtv_lineSpacing, lineSpacing);
         a.recycle();
+        if(null!= AjLatexMath.getPaint()){
+            AjLatexMath.getPaint().setColor(textColor);
+        }
     }
 
     public void setTextColor(int textColor) {

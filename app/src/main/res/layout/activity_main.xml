@@ -26,6 +26,7 @@
         android:background="#fff"
         app:frtv_pureText="true"
         app:maxLine="5"
+        app:textColor="@color/colorPrimary"
         app:textSize="20sp" />
 
     <android.support.v7.widget.RecyclerView
