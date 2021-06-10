@@ -8,7 +8,11 @@
         <attr name="textColor" format="color" />
         <attr name="textSize" format="dimension" />
         <attr name="maxLine" format="integer" />
+        <attr name="textIsSelectable" format="boolean" />
+        <attr name="frtv_linesLimit" format="integer" />
+        <attr name="frtv_linesWidth" format="dimension" />
         <attr name="frtv_pureText" format="boolean" />
+        <attr name="frtv_lineSpacing" format="dimension" />
     </declare-styleable>
 
 </resources>

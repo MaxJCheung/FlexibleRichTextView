@@ -1,5 +1,6 @@
 package com.example.daquexian.flexiblerichtextview;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -52,6 +53,15 @@ public class MainActivity extends AppCompatActivity {
         list.add("电影开演时观众中女士与男士人数之比为5：4，开演后无观众入场，放映一小时后，女士的20%，男士的15%离场，则此时在场的女士与男士人数之比为（  ）" + text);
         list.add("健身房中,某个周末下午3:00,参加健身的男士与女士人数之比为3:4,下午5:00,男士中有25%,女士中有50%离开了健身房,此时留在健身房内的男士与女士人数之比是（   ）" + text);
         adapter.setList(list);
+
+        final FlexibleRichTextView tv = findViewById(R.id.frtv);
+        tv.setText("要使$3x^{2} + (m - 5)x + m^{2} - m - 2 = 0$\n的两根分别满足：$0 < x_{1} < 1,1 < x_{2} < 2.$\n\n（1）$- 2 < m < 0$\n\n（2）$- 3 < m < - \\frac{3}{2}$ .");
+        findViewById(R.id.tv_change_color).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                tv.changeTextColor(Color.RED);
+            }
+        });
     }
 
     private static class Adapter extends RecyclerView.Adapter<Adapter.Holder> {

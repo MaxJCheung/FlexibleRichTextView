@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.support.annotation.NonNull;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.widget.TextView;
@@ -22,20 +23,31 @@ import java.util.List;
 
 public class LaTeXtView extends TextView {
 
-    private int laTexSize=0;
+    public interface OnFormulaParsedListener {
+        void onFormulaParsed(@NonNull SpannableStringBuilder builder);
+    }
+
+    private OnFormulaParsedListener onFormulaParsedListener = null;
+
+    public void setOnFormulaParsedListener(OnFormulaParsedListener onFormulaParsedListener) {
+        this.onFormulaParsedListener = onFormulaParsedListener;
+    }
 
     public LaTeXtView(Context context) {
         super(context);
     }
 
+//    public void changeTextColor(){
+//         SpannableStringBuilder builder= (SpannableStringBuilder) getText();
+//        builder.
+//    }
+
     public void setTextWithFormula(TextWithFormula textWithFormula) {
         List<TextWithFormula.Formula> formulas = textWithFormula.getFormulas();
         final SpannableStringBuilder builder = textWithFormula;
-
         for (final TextWithFormula.Formula formula : formulas) {
             TeXFormula teXFormula = TeXFormula.getPartialTeXFormula(formula.content);
-
-           try {
+            try {
                 Bitmap bitmap = getBitmap(teXFormula);
                 if (bitmap.getWidth() > FlexibleRichTextView.MAX_IMAGE_WIDTH) {
                     bitmap = Bitmap.createScaledBitmap(bitmap, FlexibleRichTextView.MAX_IMAGE_WIDTH,
@@ -46,50 +58,19 @@ public class LaTeXtView extends TextView {
                 builder.setSpan(new CenteredImageSpan(getContext(), bitmap),
                         formula.start, formula.end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
             } catch (Exception e) {
-                /* Glide.with(getContext())
-                        .load(Constants.FORMULA_SITE + formula.content)
-                        .asBitmap()
-                        .placeholder(new ColorDrawable(ContextCompat.getColor(getContext(), android.R.color.darker_gray)))
-                        .into(new SimpleTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(final Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                final int HEIGHT_THRESHOLD = 60;
-                                // post to avoid ConcurrentModificationException, from https://github.com/bumptech/glide/issues/375
-                                post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Bitmap newImage;
-                                        if (resource.getWidth() > Constants.MAX_IMAGE_WIDTH) {
-                                            int newHeight = resource.getHeight() * Constants.MAX_IMAGE_WIDTH / resource.getWidth();
-                                            newImage = Bitmap.createScaledBitmap(resource, Constants.MAX_IMAGE_WIDTH, newHeight, true);
-                                        } else {
-                                            newImage = resource;
-                                        }
-
-                                        builder.setSpan(new CenteredImageSpan(getContext(), newImage), formula.start, formula.end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-
-                                        setText(builder);
-                                        // retrieveFormulaOnlineImg(formulaList, view, builder, i + 1, start);
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                                super.onLoadFailed(e, errorDrawable);
-                                if (e != null) e.printStackTrace();
-                            }
-                        });*/
             }
         }
-
+        if (onFormulaParsedListener != null) {
+            onFormulaParsedListener.onFormulaParsed(builder);
+        }
         setText(builder);
     }
 
     private Bitmap getBitmap(TeXFormula formula) {
         TeXIcon icon = formula.new TeXIconBuilder()
                 .setStyle(TeXConstants.STYLE_DISPLAY)
-                .setSize(laTexSize )
+                .setFGColor(getPaint().getColor())
+                .setSize(SizeUtil.px2sp(getPaint().getTextSize()))
                 .setWidth(TeXConstants.UNIT_SP, getPaint().getTextSize() / getPaint().density, TeXConstants.ALIGN_LEFT)
                 .setIsMaxWidth(true)
                 .setInterLineSpacing(TeXConstants.UNIT_SP,
@@ -104,9 +85,5 @@ public class LaTeXtView extends TextView {
         g2.drawColor(Color.TRANSPARENT);
         icon.paintIcon(g2, 0, 0);
         return image;
-    }
-
-    public void setLaTexSize(int laTexSize) {
-        this.laTexSize = laTexSize;
     }
 }
